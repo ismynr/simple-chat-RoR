@@ -7,3 +7,6 @@ The challenge is make sure when you run `bundle exec rspec`, all result is green
 * Ruby v2.7.2
 * Database postgreSQL
 * Bundle v2.1.4
+
+## Result
+![Result](test.png)
