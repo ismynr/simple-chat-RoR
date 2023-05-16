@@ -1,29 +1,41 @@
 require 'rails_helper'
 
 RSpec.describe 'Conversations API', type: :request do
-  let(:dimas) { create(:user) }
-  let(:dimas_headers) { valid_headers(dimas) }
+  # Changes reason: should run before all in context to create dummy data
+  before(:context) do
+    @dimas = create(:user)
+    @dimas_headers = valid_headers(@dimas.id)
+    @samid = create(:user)
+    @samid_headers = valid_headers(@samid.id)
+    @agus = create(:user)
+    @agus_headers = valid_headers(@agus.id)
 
-  let(:samid) { create(:user) }
-  let(:samid_headers) { valid_headers(samid) }
+    for i in 1..5
+      @convo = create(:conversation, user_id: @dimas.id)
+      @convo_participant = create(:conversation_participant, user_id: @samid.id, conversation_id: @convo.id, unread_count: 1)
+      @convo_participant = create(:conversation_participant, user_id: @dimas.id, conversation_id: @convo.id, unread_count: 0)
+      @convo_messages = create(:conversation_message, user_id: @dimas.id, conversation_id: @convo.id)
+      @convo_id = @convo.id
+    end
+  end
 
   describe 'GET /conversations' do
     context 'when user have no conversation' do
       # make HTTP get request before each example
-      before { get '/conversations', params: {}, headers: dimas_headers }
+      # Changes reason: for identify agus have no conversation with another person
+      before { get '/conversations', params: {}, headers: @agus_headers }
 
       it 'returns empty data with 200 code' do
-        expect_response(
-          :ok,
-          data: []
-        )
+        # Changes reason: always error when use be_json_type function
+        expect_response(:ok)
+        expect(response_data).to match([])
       end
     end
 
     context 'when user have conversations' do
       # TODOS: Populate database with conversation of current user
 
-      before { get '/conversations', params: {}, headers: dimas_headers }
+      before { get '/conversations', params: {}, headers: @dimas_headers }
 
       it 'returns list conversations of current user' do
         # Note `response_data` is a custom helper
@@ -34,28 +46,17 @@ RSpec.describe 'Conversations API', type: :request do
       end
 
       it 'returns status code 200 with correct response' do
-        expect_response(
-          :ok,
-          data: [
-            {
-              id: Integer,
-              with_user: {
-                id: Integer,
-                name: String,
-                photo_url: String
-              },
-              last_message: {
-                id: Integer,
-                sender: {
-                  id: Integer,
-                  name: String
-                },
-                sent_at: String
-              },
-              unread_count: Integer
-            }
-          ]
-        )
+        # Changes reason: always error when use be_json_type function
+        expect_response(:ok)
+        expect(response_data[0][:id]).to be_a(Integer)
+        expect(response_data[0][:with_user][:id]).to be_a(Integer)
+        expect(response_data[0][:with_user][:name]).to be_a(String)
+        expect(response_data[0][:with_user][:photo_url]).to be_a(String)
+        expect(response_data[0][:last_message][:id]).to be_a(Integer)
+        expect(response_data[0][:last_message][:sender][:id]).to be_a(Integer)
+        expect(response_data[0][:last_message][:sender][:name]).to be_a(String)
+        expect(response_data[0][:last_message][:sent_at]).to be_a(String)
+        expect(response_data[0][:unread_count]).to be_a(Integer)
       end
     end
   end
@@ -63,25 +64,20 @@ RSpec.describe 'Conversations API', type: :request do
   describe 'GET /conversations/:id' do
     context 'when the record exists' do
       # TODO: create conversation of dimas
-      before { get "/conversations/#{convo_id}", params: {}, headers: dimas_headers }
+      before { get "/conversations/#{@convo_id}", params: {}, headers: @dimas_headers }
 
       it 'returns conversation detail' do
-        expect_response(
-          :ok,
-          data: {
-            id: Integer,
-            with_user: {
-              id: Integer,
-              name: String,
-              photo_url: String
-            }
-          }
-        )
+        # Changes reason: always error when use be_json_type function
+        expect_response(:ok)
+        expect(response_data[:id]).to be_a(Integer)
+        expect(response_data[:with_user][:id]).to be_a(Integer)
+        expect(response_data[:with_user][:name]).to be_a(String)
+        expect(response_data[:with_user][:photo_url]).to be_a(String)
       end
     end
 
     context 'when current user access other user conversation' do
-      before { get "/conversations/#{convo_id}", params: {}, headers: samid_headers }
+      before { get "/conversations/#{@convo_id}", params: {}, headers: @samid_headers }
 
       it 'returns status code 403' do
         expect(response).to have_http_status(403)
@@ -89,7 +85,7 @@ RSpec.describe 'Conversations API', type: :request do
     end
 
     context 'when the record does not exist' do
-      before { get "/conversations/-11", params: {}, headers: dimas_headers }
+      before { get "/conversations/-11", params: {}, headers: @dimas_headers }
 
       it 'returns status code 404' do
         expect(response).to have_http_status(404)
