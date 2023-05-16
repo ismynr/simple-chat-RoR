@@ -3,10 +3,16 @@ class ConversationsController < ApplicationController
     def index
         user = user_auth
         @conversationParticipant = ConversationParticipant.where(user_id: user.id)
+        # simple find & search by user name with user_name key
+        user_name = request.query_parameters[:user_name]
 
         modified_conversations = @conversationParticipant.map do |itemCp|
             @lastConversationMessage = ConversationMessage.where(conversation_id: itemCp.conversation_id).order(created_at: :desc).first
             @conversationParticipantWith = ConversationParticipant.where.not(user_id: user.id).where(conversation_id: itemCp.conversation_id).first
+            # simple find & search by user name
+            if !user_name.nil? && user_name != @conversationParticipantWith.user.name
+                next
+            end
             {
                 id: itemCp.conversation_id,
                 with_user: {
