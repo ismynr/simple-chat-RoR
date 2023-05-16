@@ -1,11 +1,19 @@
 module ControllerSpecHelper
   # generate tokens from user id
   def token_generator(user_id)
+    # Changes reason: wrong convert, and can't be decode if use user object directly
+    if user_id.is_a?(User)
+      user_id = user_id.id
+    end
     JsonWebToken.encode(user_id: user_id)
   end
 
   # generate expired tokens from user id
   def expired_token_generator(user_id)
+    # Changes reason: wrong convert, and can't be decode if use user object directly
+    if user_id.is_a?(User)
+      user_id = user_id.id
+    end
     JsonWebToken.encode({ user_id: user_id }, (Time.now.to_i - 10))
   end
 
