@@ -4,6 +4,7 @@ RSpec.describe 'Messages API', type: :request do
   # Changes reason: should run before all in context to create dummy data
   before(:context) do
     @agus = create(:user)
+    @agus_headers = valid_headers(@agus.id)
     @dimas = create(:user)
     @dimas_headers = valid_headers(@dimas.id)
     @samid = create(:user)
@@ -11,8 +12,8 @@ RSpec.describe 'Messages API', type: :request do
 
     # TODO: create conversation between Dimas and Agus, then set convo_id variable
     @convo = create(:conversation, user_id: @dimas.id)
-    @convo_participant = create(:conversation_participant, user_id: @agus.id, conversation_id: @convo.id, unread_count: 1)
-    @convo_participant = create(:conversation_participant, user_id: @dimas.id, conversation_id: @convo.id, unread_count: 0)
+    @convo_participantAgus = create(:conversation_participant, user_id: @agus.id, conversation_id: @convo.id, unread_count: 1)
+    @convo_participantDimas = create(:conversation_participant, user_id: @dimas.id, conversation_id: @convo.id, unread_count: 0)
     @convo_messages = create(:conversation_message, user_id: @dimas.id, conversation_id: @convo.id)
     @convo_id = @convo.id
   end
@@ -29,6 +30,18 @@ RSpec.describe 'Messages API', type: :request do
         expect(response_data[0][:sender][:id]).to be_a(Integer)
         expect(response_data[0][:sender][:name]).to be_a(String)
         expect(response_data[0][:sent_at]).to be_a(String)
+        conversationParticipant = ConversationParticipant.where(user_id: @agus.id, conversation_id: @convo.id).first
+        expect(1).to eq(conversationParticipant.unread_count)
+      end
+    end
+
+    context 'when user another user read message lists' do
+      before { get "/conversations/#{@convo_id}/messages", params: {}, headers: @agus_headers }
+      
+      it 'reset unread count' do
+        conversationParticipant = ConversationParticipant.where(user_id: @agus.id, conversation_id: @convo.id).first
+        expect_response(:ok)
+        expect(0).to eq(conversationParticipant.unread_count)
       end
     end
 

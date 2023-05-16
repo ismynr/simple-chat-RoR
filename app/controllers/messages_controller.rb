@@ -8,12 +8,16 @@ class MessagesController < ApplicationController
         
         @conversations = Conversation.find(conversation_id)
         @messages = ConversationMessage.where(conversation_id: conversation_id)
+        @conversationParticipants = ConversationParticipant.where(conversation_id: @conversations.id).pluck(:user_id)
 
         # if the conversation is not hers
-        if @conversations.user_id != user.id
+        if !@conversationParticipants.include?(user.id)
             json_response("You don't have access for this resource", :forbidden)
             return
         end
+
+        # reset unread_count
+        ConversationParticipant.where(user_id: user.id, conversation_id: @conversations.id).update(unread_count: 0)
 
         modified_messages = @messages.map do |message|
             {
